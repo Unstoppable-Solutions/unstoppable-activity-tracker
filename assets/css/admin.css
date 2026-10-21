@@ -1,0 +1,142 @@
+/**
+ * Unstoppable Activity Tracker — Admin styles.
+ */
+
+.uatr-wrap .form-table input.code,
+.uatr-wrap .form-table textarea.code {
+	font-family: Consolas, Monaco, "Courier New", monospace;
+	font-size: 12px;
+	background: #f6f7f7;
+}
+
+.uatr-wrap .uatr-endpoints code {
+	font-size: 12px;
+	background: transparent;
+}
+
+/* Spacing for the regenerate-key form, formerly an inline style. */
+.uatr-wrap .uatr-regenerate-form {
+	margin-top: 10px;
+}
+
+/* Footer line at the bottom of the settings page. */
+.uatr-wrap .uatr-footer {
+	margin-top: 30px;
+	color: #666;
+}
+
+/* Stats bar at the top of the settings page. */
+.uatr-stats-bar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin: 18px 0 24px;
+	padding: 14px 18px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #f0b849;
+	border-radius: 4px;
+	max-width: 760px;
+}
+
+.uatr-stats-bar .uatr-stat {
+	font-size: 14px;
+	flex: 1;
+}
+
+.uatr-stats-bar .uatr-stat strong {
+	font-size: 22px;
+	color: #1d2327;
+	margin-right: 6px;
+}
+
+/* Activity log filters bar. */
+.uatr-log-filters {
+	margin: 18px 0;
+	padding: 12px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.uatr-log-total {
+	margin-left: auto;
+	color: #50575e;
+}
+
+/* Activity log table. */
+.uatr-log-table {
+	margin-top: 12px;
+}
+
+.uatr-log-table td,
+.uatr-log-table th {
+	vertical-align: top;
+	padding: 8px 10px;
+	font-size: 13px;
+}
+
+.uatr-log-table code {
+	font-size: 11px;
+	background: #f0f0f1;
+	padding: 1px 6px;
+	border-radius: 3px;
+}
+
+/* Severity pills. */
+.uatr-sev-pill {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: #fff;
+}
+
+.uatr-sev-pill-info     { background: #2271b1; }
+.uatr-sev-pill-notice   { background: #2271b1; }
+.uatr-sev-pill-warning  { background: #dba617; color: #1d2327; }
+.uatr-sev-pill-error    { background: #d63638; }
+.uatr-sev-pill-critical { background: #8c1d1f; }
+
+/* Export form on Activity Log page */
+.uatr-export-form {
+	margin: 10px 0 20px;
+	padding: 12px;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.uatr-export-form label {
+	color: #50575e;
+	font-weight: 600;
+}
+
+.uatr-export-note {
+	color: #8c8f94;
+	font-size: 12px;
+	font-style: italic;
+	margin-left: auto;
+}
+
+/* Spacing for the regenerate-key form (replaces inline style) */
+.uatr-regenerate-form {
+	margin-top: 10px;
+}
+
+/* Footer paragraph on settings page (replaces inline style) */
+.uatr-footer {
+	margin-top: 30px;
+	color: #666;
+}

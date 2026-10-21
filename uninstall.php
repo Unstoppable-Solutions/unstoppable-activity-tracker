@@ -1,21 +1,51 @@
 <?php
 /**
- * Uninstall handler for __PLUGIN_NAME__.
+ * Uninstall handler — runs only when the plugin is deleted from the Plugins list,
+ * NOT on deactivation.
  *
- * Runs when the plugin is deleted from Plugins → Installed Plugins. Deactivation
- * alone does NOT trigger this file. Clean up all plugin data (database tables,
- * options, transients, cron hooks) so the site is returned to the state it
- * was in before the plugin was installed.
+ * Deletes:
+ *   - Custom events table
+ *   - All plugin options
+ *   - All plugin transients
+ *   - Scheduled cron events
  *
- * @package __PLUGIN_PACKAGE__
+ * @package Unstoppable_Activity_Tracker
  */
 
-defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
+// WordPress sets this constant when uninstalling. Bail otherwise.
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	exit;
+}
 
-// Example cleanup — adjust as the plugin grows:
-//
-// delete_option( '__prefix___settings' );
-// delete_option( '__prefix___db_version' );
-//
-// global $wpdb;
-// $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}__prefix___my_table" );
+global $wpdb;
+
+// Drop our custom events table.
+// Table name is safe: $wpdb->prefix is controlled by WordPress + a hardcoded suffix.
+// DROP TABLE cannot use placeholders for identifiers, so interpolation is required.
+$uatr_table = $wpdb->prefix . 'uatr_events';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safe (WP prefix + hardcoded string); schema change on uninstall.
+$wpdb->query( "DROP TABLE IF EXISTS {$uatr_table}" );
+
+// Delete all plugin options.
+$uatr_options = array(
+	'uatr_db_version',
+	'uatr_api_key',
+	'uatr_api_enabled',
+	'uatr_install_date',
+	'uatr_retention_days',
+	'uatr_digest_enabled',
+	'uatr_digest_email',
+	'uatr_digest_frequency',
+	'uatr_digest_threshold',
+	'uatr_digest_last_sent',
+);
+foreach ( $uatr_options as $uatr_opt ) {
+	delete_option( $uatr_opt );
+}
+
+// Clear transients.
+delete_transient( 'uatr_flash_notices' );
+
+// Unschedule crons.
+wp_clear_scheduled_hook( 'uatr_daily_cleanup' );
+wp_clear_scheduled_hook( 'uatr_send_digest' );
