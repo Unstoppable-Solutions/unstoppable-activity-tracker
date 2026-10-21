@@ -160,6 +160,7 @@ class UATR_Exporter {
 			) );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the streaming php://output handle opened above; WP_Filesystem is not applicable.
 		fclose( $out );
 	}
 
