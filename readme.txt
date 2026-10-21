@@ -3,7 +3,7 @@ Contributors: paramedic192
 Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
