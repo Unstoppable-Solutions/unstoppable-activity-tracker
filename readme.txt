@@ -4,20 +4,20 @@ Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Standalone activity log with Insights charts, filterable log viewer, CSV/JSON export, email digests, optional WooCommerce tracking, and REST API.
+Standalone activity log with Insights charts, downtime forensics, CSV/JSON export, email digests, optional WooCommerce tracking, and REST API.
 
 == Description ==
 
 Unstoppable Activity Tracker is a fully standalone activity tracker. It does **not** depend on any other plugin — it hooks WordPress directly and writes to its own database table.
 
-**New in 2.2.0:** CSV/JSON export from the Activity Log, opt-in email digests (daily or weekly summaries of warnings/errors/critical events), and optional WooCommerce event tracking when WooCommerce is active.
+**New in 2.3.0 — Downtime Forensics:** when a site goes offline and comes back up, Activity Tracker makes it dramatically easier to find what caused it. Risky events (plugin updates, core updates, theme switches, critical option changes) are now visually highlighted in the log, each annotated with a snapshot of the plugin/theme/version state at that moment. A one-click "Site-stability events" filter and a new `?before=` REST parameter let you drill into the minutes before a known outage.
 
-**Insights dashboard (added in 2.1.0):** activity trends over time, event breakdown by category, most active users, and security highlights — all with a time range switcher (24 hours / 7 days / 30 days / 90 days).
+**Previously added:** CSV/JSON export (2.2.0), opt-in email digests (2.2.0), optional WooCommerce tracking (2.2.0), visual Insights dashboard (2.1.0).
 
 Use it as an audit log for a single site, or expose the REST endpoint to a dashboard, monitoring tool, or client portal of your choice.
 
@@ -104,6 +104,15 @@ Yes. Set the retention setting to 0.
 
 == Changelog ==
 
+= 2.3.0 =
+* **New: Downtime Forensics.** When a site goes offline and comes back up, the Activity Log now makes it dramatically easier to find what caused it:
+  * **Elevated severities on breakage-prone events.** Plugin activations and plugin/core/theme installs and updates now log at `notice` or `warning` severity so they stand out in the log. Theme switches and WordPress core updates log at `warning`. Changes to the `siteurl` or `home` option log at `critical` (these are the near-universal cause of admin lockout). Other watched-option changes log at `warning`.
+  * **"Last known good" state snapshots.** On every plugin/theme/core change and every critical option change, UATR now stores a snapshot of the current state (active plugins list, WP version, active theme, PHP version) in the event's meta. After an outage you can see the exact state immediately before each risky change — enough context to know what to roll back.
+  * **One-click "Site-stability events" filter** on the Activity Log page. Shows only plugin, theme, and core changes — the usual suspects when a site goes down.
+  * **New REST parameter: `?before=TIMESTAMP`.** Pair with the existing `?since=` to pull a precise event window — e.g. "events in the 15 minutes before my uptime monitor reported downtime at 2:47 PM."
+* **Settings page UX cleanup.** The Endpoint URL, API Key, and REST reference tables are now tucked inside a collapsible "External integration (optional)" block, closed by default. Non-technical users opening the Settings page see the simple options (enabled toggle, retention, digest settings) without being confronted with connection details they don't need. A reassuring intro at the top says "This plugin works out of the box — everything below is optional."
+* "Regenerate API Key" button renamed to "Generate a new key" with a gentler helper note; its purpose is the same.
+
 = 2.2.0 =
 * **New: CSV / JSON export.** Download the filtered Activity Log as a CSV or JSON file (hard cap: 50,000 rows per export).
 * **New: Email digest.** Opt-in daily or weekly email summary of events at or above a chosen severity threshold (warning / error / critical). Nothing is sent unless you enable it. If no matching events occurred in the window, no email is sent.
@@ -151,6 +160,9 @@ Yes. Set the retention setting to 0.
 * Full uninstall cleanup (drops table, deletes options).
 
 == Upgrade Notice ==
+
+= 2.3.0 =
+Adds Downtime Forensics: elevated severities on risky events, site-state snapshots on changes, a one-click stability filter, and a new `?before=` REST parameter. Settings page tidied to hide API/endpoint details behind a collapsible block. All existing data preserved.
 
 = 2.2.0 =
 Adds CSV/JSON export, opt-in email digests, and optional WooCommerce event tracking. All existing data preserved; no settings changes required.

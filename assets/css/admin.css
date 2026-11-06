@@ -140,3 +140,104 @@
 	margin-top: 30px;
 	color: #666;
 }
+
+/* --- 2.3.0 Settings page UX cleanup --- */
+
+/* Reassuring intro line */
+.uatr-wrap .uatr-intro {
+	font-size: 14px;
+	color: #50575e;
+	margin: 6px 0 20px;
+}
+
+/* Collapsible "External integration (optional)" block */
+.uatr-external-integration {
+	margin: 32px 0 20px;
+	padding: 0;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.uatr-external-integration > summary {
+	cursor: pointer;
+	padding: 14px 18px;
+	list-style: none;
+	user-select: none;
+	border-radius: 4px;
+	transition: background 0.1s ease;
+}
+
+.uatr-external-integration > summary::-webkit-details-marker {
+	display: none;
+}
+
+.uatr-external-integration > summary:hover {
+	background: #f6f7f7;
+}
+
+.uatr-external-integration > summary::before {
+	content: "▸";
+	display: inline-block;
+	margin-right: 8px;
+	color: #50575e;
+	transition: transform 0.15s ease;
+}
+
+.uatr-external-integration[open] > summary::before {
+	transform: rotate(90deg);
+}
+
+.uatr-external-integration > summary > .uatr-ext-label {
+	font-weight: 600;
+	font-size: 14px;
+	color: #1d2327;
+}
+
+.uatr-external-integration > summary > .uatr-ext-sub {
+	display: block;
+	margin-top: 4px;
+	margin-left: 20px;
+	font-size: 12px;
+	color: #646970;
+	font-weight: normal;
+}
+
+.uatr-external-integration > *:not(summary) {
+	padding-left: 18px;
+	padding-right: 18px;
+}
+
+.uatr-external-integration > *:last-child {
+	padding-bottom: 14px;
+}
+
+/* Softer labelling for the (previously alarming) regenerate button */
+.uatr-regenerate-hint {
+	display: block;
+	margin-top: 6px;
+	color: #8c8f94;
+	font-style: italic;
+}
+
+/* --- 2.3.0 Downtime Forensics preset bar --- */
+
+.uatr-log-presets {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 14px 0 6px;
+	flex-wrap: wrap;
+}
+
+.uatr-preset-label {
+	color: #50575e;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.uatr-preset-note {
+	color: #50575e;
+	font-size: 12px;
+	font-style: italic;
+}
