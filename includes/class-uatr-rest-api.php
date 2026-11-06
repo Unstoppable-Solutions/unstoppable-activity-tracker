@@ -53,6 +53,13 @@ class UATR_REST_API {
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'before'     => array(
+						// Added in 2.3.0 for downtime forensics: fetch events BEFORE a known timestamp
+						// (e.g. an uptime monitor's downtime alert). Mirrors `since` but in the other
+						// direction. Accepts a Unix timestamp or a MySQL datetime string.
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
 					'object'     => array(
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_key',
@@ -249,6 +256,17 @@ class UATR_REST_API {
 			$ts = is_numeric( $since ) ? (int) $since : strtotime( (string) $since );
 			if ( $ts && $ts > 0 ) {
 				$where[]  = 'created_on > %f';
+				$params[] = (float) $ts;
+			}
+		}
+
+		// before (Unix timestamp or MySQL datetime) — added in 2.3.0 for downtime forensics.
+		// Combined with `since`, lets consumers request a precise window: ?since=X&before=Y.
+		$before = $request->get_param( 'before' );
+		if ( ! empty( $before ) ) {
+			$ts = is_numeric( $before ) ? (int) $before : strtotime( (string) $before );
+			if ( $ts && $ts > 0 ) {
+				$where[]  = 'created_on < %f';
 				$params[] = (float) $ts;
 			}
 		}

@@ -414,8 +414,8 @@ class UATR_Admin {
 		?>
 		<div class="wrap uatr-wrap">
 			<h1><?php esc_html_e( 'Unstoppable Activity Tracker', 'unstoppable-activity-tracker' ); ?></h1>
-			<p class="description">
-				<?php esc_html_e( 'Standalone activity tracker. Records site events to a local database table and exposes them via a secure REST endpoint.', 'unstoppable-activity-tracker' ); ?>
+			<p class="description uatr-intro">
+				<?php esc_html_e( 'This plugin works out of the box. Everything below is optional — the defaults are safe for most sites.', 'unstoppable-activity-tracker' ); ?>
 			</p>
 
 			<div class="uatr-stats-bar">
@@ -430,51 +430,6 @@ class UATR_Admin {
 					<?php esc_html_e( 'View Activity Log', 'unstoppable-activity-tracker' ); ?>
 				</a>
 			</div>
-
-			<h2><?php esc_html_e( 'Connection Details', 'unstoppable-activity-tracker' ); ?></h2>
-			<p><?php esc_html_e( 'Use these values to authenticate requests from your portal, dashboard, or any other consumer of the activity feed.', 'unstoppable-activity-tracker' ); ?></p>
-
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row"><label for="uatr-endpoint"><?php esc_html_e( 'Endpoint URL', 'unstoppable-activity-tracker' ); ?></label></th>
-					<td>
-						<input type="text" id="uatr-endpoint"
-							value="<?php echo esc_attr( $endpoint_url ); ?>"
-							readonly class="large-text code" onclick="this.select();">
-						<p class="description">
-							<?php esc_html_e( 'The REST endpoint that returns activity events. Use this as the base URL in any consumer that needs to read events.', 'unstoppable-activity-tracker' ); ?>
-						</p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="uatr-key"><?php esc_html_e( 'API Key', 'unstoppable-activity-tracker' ); ?></label></th>
-					<td>
-						<input type="text" id="uatr-key"
-							value="<?php echo esc_attr( $api_key ); ?>"
-							readonly class="large-text code" onclick="this.select();">
-						<p class="description">
-							<?php
-							printf(
-								/* translators: %s: the required HTTP header name */
-								esc_html__( 'Send this in the %s header on every request. Treat it like a password.', 'unstoppable-activity-tracker' ),
-								'<code>' . esc_html( UATR_AUTH_HEADER ) . '</code>'
-							);
-							?>
-						</p>
-						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="uatr-regenerate-form" onsubmit="return confirm('<?php echo esc_js( __( 'Regenerate the API key? Any existing consumer using the current key will stop working until updated.', 'unstoppable-activity-tracker' ) ); ?>');">
-							<?php wp_nonce_field( 'uatr_regenerate_key' ); ?>
-							<input type="hidden" name="action" value="uatr_regenerate_key">
-							<button type="submit" class="button"><?php esc_html_e( 'Regenerate API Key', 'unstoppable-activity-tracker' ); ?></button>
-						</form>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Test from terminal', 'unstoppable-activity-tracker' ); ?></th>
-					<td>
-						<textarea readonly class="large-text code" rows="3" onclick="this.select();">curl -H "<?php echo esc_textarea( UATR_AUTH_HEADER ); ?>: <?php echo esc_textarea( $api_key ); ?>" "<?php echo esc_url( $ping_url ); ?>"</textarea>
-					</td>
-				</tr>
-			</table>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'uatr_settings' ); ?>
@@ -562,54 +517,114 @@ class UATR_Admin {
 				<?php submit_button(); ?>
 			</form>
 
-			<h2><?php esc_html_e( 'Available endpoints', 'unstoppable-activity-tracker' ); ?></h2>
-			<table class="widefat striped uatr-endpoints">
-				<thead>
+			<details class="uatr-external-integration">
+				<summary>
+					<span class="uatr-ext-label"><?php esc_html_e( 'External integration (optional)', 'unstoppable-activity-tracker' ); ?></span>
+					<span class="uatr-ext-sub"><?php esc_html_e( 'Only needed if you want another tool — a dashboard, monitoring service, or custom script — to read your activity events via REST. Most users can ignore this.', 'unstoppable-activity-tracker' ); ?></span>
+				</summary>
+
+				<h2><?php esc_html_e( 'Connection Details', 'unstoppable-activity-tracker' ); ?></h2>
+				<p><?php esc_html_e( 'Use these values to authenticate requests from your portal, dashboard, or any other consumer of the activity feed.', 'unstoppable-activity-tracker' ); ?></p>
+
+				<table class="form-table" role="presentation">
 					<tr>
-						<th><?php esc_html_e( 'Method', 'unstoppable-activity-tracker' ); ?></th>
-						<th><?php esc_html_e( 'URL', 'unstoppable-activity-tracker' ); ?></th>
-						<th><?php esc_html_e( 'Purpose', 'unstoppable-activity-tracker' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>GET</td>
-						<td><code><?php echo esc_html( $ping_url ); ?></code></td>
-						<td><?php esc_html_e( 'Health check. Returns plugin status and event count.', 'unstoppable-activity-tracker' ); ?></td>
-					</tr>
-					<tr>
-						<td>GET</td>
-						<td><code><?php echo esc_html( $endpoint_url ); ?>?limit=50</code></td>
-						<td><?php esc_html_e( 'Recent events (max 200).', 'unstoppable-activity-tracker' ); ?></td>
-					</tr>
-					<tr>
-						<td>GET</td>
-						<td><code><?php echo esc_html( $endpoint_url ); ?>?since=1714000000</code></td>
-						<td><?php esc_html_e( 'Only events newer than the given Unix timestamp — for incremental sync.', 'unstoppable-activity-tracker' ); ?></td>
+						<th scope="row"><label for="uatr-endpoint"><?php esc_html_e( 'Endpoint URL', 'unstoppable-activity-tracker' ); ?></label></th>
+						<td>
+							<input type="text" id="uatr-endpoint"
+								value="<?php echo esc_attr( $endpoint_url ); ?>"
+								readonly class="large-text code" onclick="this.select();">
+							<p class="description">
+								<?php esc_html_e( 'The REST endpoint that returns activity events. Use this as the base URL in any consumer that needs to read events.', 'unstoppable-activity-tracker' ); ?>
+							</p>
+						</td>
 					</tr>
 					<tr>
-						<td>GET</td>
-						<td><code><?php echo esc_html( $endpoint_url ); ?>?object=user</code></td>
-						<td><?php esc_html_e( 'Filter by object: user, post, plugin, theme, option, core.', 'unstoppable-activity-tracker' ); ?></td>
+						<th scope="row"><label for="uatr-key"><?php esc_html_e( 'API Key', 'unstoppable-activity-tracker' ); ?></label></th>
+						<td>
+							<input type="text" id="uatr-key"
+								value="<?php echo esc_attr( $api_key ); ?>"
+								readonly class="large-text code" onclick="this.select();">
+							<p class="description">
+								<?php
+								printf(
+									/* translators: %s: the required HTTP header name */
+									esc_html__( 'Send this in the %s header on every request. Treat it like a password.', 'unstoppable-activity-tracker' ),
+									'<code>' . esc_html( UATR_AUTH_HEADER ) . '</code>'
+								);
+								?>
+							</p>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="uatr-regenerate-form" onsubmit="return confirm('<?php echo esc_js( __( 'Generate a new API key? Any existing consumer using the current key will stop working until updated.', 'unstoppable-activity-tracker' ) ); ?>');">
+								<?php wp_nonce_field( 'uatr_regenerate_key' ); ?>
+								<input type="hidden" name="action" value="uatr_regenerate_key">
+								<button type="submit" class="button"><?php esc_html_e( 'Generate a new key', 'unstoppable-activity-tracker' ); ?></button>
+								<span class="description uatr-regenerate-hint">
+									<?php esc_html_e( "Only needed if the current key was shared somewhere unsafe. Most users never do this.", 'unstoppable-activity-tracker' ); ?>
+								</span>
+							</form>
+						</td>
 					</tr>
 					<tr>
-						<td>GET</td>
-						<td><code><?php echo esc_html( rest_url( UATR_REST_NAMESPACE . '/stats' ) ); ?></code></td>
-						<td><?php esc_html_e( 'Aggregate counts (total, last 24h, last 7d, by object).', 'unstoppable-activity-tracker' ); ?></td>
+						<th scope="row"><?php esc_html_e( 'Test from terminal', 'unstoppable-activity-tracker' ); ?></th>
+						<td>
+							<textarea readonly class="large-text code" rows="3" onclick="this.select();">curl -H "<?php echo esc_textarea( UATR_AUTH_HEADER ); ?>: <?php echo esc_textarea( $api_key ); ?>" "<?php echo esc_url( $ping_url ); ?>"</textarea>
+						</td>
 					</tr>
-				</tbody>
-			</table>
-			<p>
-				<em>
-					<?php
-					printf(
-						/* translators: %s: header */
-						esc_html__( 'All requests require the header %s with your API key.', 'unstoppable-activity-tracker' ),
-						'<code>' . esc_html( UATR_AUTH_HEADER ) . ': &lt;your key&gt;</code>'
-					);
-					?>
-				</em>
-			</p>
+				</table>
+
+				<h2><?php esc_html_e( 'Available endpoints', 'unstoppable-activity-tracker' ); ?></h2>
+				<table class="widefat striped uatr-endpoints">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Method', 'unstoppable-activity-tracker' ); ?></th>
+							<th><?php esc_html_e( 'URL', 'unstoppable-activity-tracker' ); ?></th>
+							<th><?php esc_html_e( 'Purpose', 'unstoppable-activity-tracker' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( $ping_url ); ?></code></td>
+							<td><?php esc_html_e( 'Health check. Returns plugin status and event count.', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( $endpoint_url ); ?>?limit=50</code></td>
+							<td><?php esc_html_e( 'Recent events (max 200).', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( $endpoint_url ); ?>?since=1714000000</code></td>
+							<td><?php esc_html_e( 'Only events newer than the given Unix timestamp — for incremental sync.', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( $endpoint_url ); ?>?before=1714000000</code></td>
+							<td><?php esc_html_e( 'Only events older than the given Unix timestamp — for post-outage forensics (combine with since for a window).', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( $endpoint_url ); ?>?object=user</code></td>
+							<td><?php esc_html_e( 'Filter by object: user, post, plugin, theme, option, core, wc_order, wc_product, wc_coupon.', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+						<tr>
+							<td>GET</td>
+							<td><code><?php echo esc_html( rest_url( UATR_REST_NAMESPACE . '/stats' ) ); ?></code></td>
+							<td><?php esc_html_e( 'Aggregate counts (total, last 24h, last 7d, by object).', 'unstoppable-activity-tracker' ); ?></td>
+						</tr>
+					</tbody>
+				</table>
+				<p>
+					<em>
+						<?php
+						printf(
+							/* translators: %s: header */
+							esc_html__( 'All requests require the header %s with your API key.', 'unstoppable-activity-tracker' ),
+							'<code>' . esc_html( UATR_AUTH_HEADER ) . ': &lt;your key&gt;</code>'
+						);
+						?>
+					</em>
+				</p>
+			</details>
 
 			<p class="uatr-footer">
 				<?php
@@ -647,25 +662,46 @@ class UATR_Admin {
 		$f_object    = isset( $_GET['f_object'] ) ? sanitize_key( wp_unslash( $_GET['f_object'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$f_severity  = isset( $_GET['f_severity'] ) ? sanitize_key( wp_unslash( $_GET['f_severity'] ) ) : '';
+		// Preset filters — one-click shortcut into a pre-built WHERE clause. Added in 2.3.0.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$f_preset    = isset( $_GET['f_preset'] ) ? sanitize_key( wp_unslash( $_GET['f_preset'] ) ) : '';
 
 		$allowed_objects   = array( '', 'user', 'post', 'plugin', 'theme', 'option', 'core', 'wc_order', 'wc_product', 'wc_coupon' );
 		$allowed_severities = array( '', 'info', 'notice', 'warning', 'error', 'critical' );
+		$allowed_presets    = array( '', 'stability' );
 		if ( ! in_array( $f_object, $allowed_objects, true ) ) {
 			$f_object = '';
 		}
 		if ( ! in_array( $f_severity, $allowed_severities, true ) ) {
 			$f_severity = '';
 		}
+		if ( ! in_array( $f_preset, $allowed_presets, true ) ) {
+			$f_preset = '';
+		}
 
 		$where  = array( '1=1' );
 		$params = array();
-		if ( '' !== $f_object ) {
-			$where[]  = 'object = %s';
-			$params[] = $f_object;
-		}
-		if ( '' !== $f_severity ) {
-			$where[]  = 'severity = %s';
-			$params[] = $f_severity;
+
+		if ( 'stability' === $f_preset ) {
+			// "Site stability" preset — events that have historically caused downtime:
+			// plugin/theme/core changes and critical option changes (siteurl/home swaps etc.).
+			// These are the first events to review after a site went down and came back up.
+			// Preset takes precedence: f_object / f_severity fields are ignored when set.
+			$where[]  = 'object IN (%s, %s, %s)';
+			$params[] = 'plugin';
+			$params[] = 'theme';
+			$params[] = 'core';
+			$f_object = '';
+			$f_severity = '';
+		} else {
+			if ( '' !== $f_object ) {
+				$where[]  = 'object = %s';
+				$params[] = $f_object;
+			}
+			if ( '' !== $f_severity ) {
+				$where[]  = 'severity = %s';
+				$params[] = $f_severity;
+			}
 		}
 		$where_sql = implode( ' AND ', $where );
 
@@ -696,9 +732,23 @@ class UATR_Admin {
 		<div class="wrap uatr-wrap">
 			<h1><?php esc_html_e( 'Activity Log', 'unstoppable-activity-tracker' ); ?></h1>
 
+			<div class="uatr-log-presets">
+				<span class="uatr-preset-label"><?php esc_html_e( 'Quick filters:', 'unstoppable-activity-tracker' ); ?></span>
+				<a href="<?php echo esc_url( add_query_arg( 'f_preset', 'stability', $base_url ) ); ?>"
+				   class="button <?php echo 'stability' === $f_preset ? 'button-primary' : ''; ?>"
+				   title="<?php esc_attr_e( 'Show only plugin, theme, and core changes — the usual suspects when a site goes down.', 'unstoppable-activity-tracker' ); ?>">
+					<?php esc_html_e( 'Site-stability events', 'unstoppable-activity-tracker' ); ?>
+				</a>
+				<?php if ( 'stability' === $f_preset ) : ?>
+					<span class="uatr-preset-note">
+						<?php esc_html_e( 'Showing plugin, theme, and core changes. Object / severity dropdowns are disabled while this preset is active.', 'unstoppable-activity-tracker' ); ?>
+					</span>
+				<?php endif; ?>
+			</div>
+
 			<form method="get" class="uatr-log-filters">
 				<input type="hidden" name="page" value="<?php echo esc_attr( UATR_PLUGIN_SLUG . '-log' ); ?>">
-				<select name="f_object">
+				<select name="f_object" <?php disabled( 'stability', $f_preset ); ?>>
 					<option value=""><?php esc_html_e( 'All objects', 'unstoppable-activity-tracker' ); ?></option>
 					<?php
 					$object_labels = array(
@@ -717,7 +767,7 @@ class UATR_Admin {
 						<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $f_object, $opt ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
-				<select name="f_severity">
+				<select name="f_severity" <?php disabled( 'stability', $f_preset ); ?>>
 					<option value=""><?php esc_html_e( 'All severities', 'unstoppable-activity-tracker' ); ?></option>
 					<?php foreach ( array( 'info', 'notice', 'warning', 'error', 'critical' ) as $opt ) : ?>
 						<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $f_severity, $opt ); ?>><?php echo esc_html( ucfirst( $opt ) ); ?></option>

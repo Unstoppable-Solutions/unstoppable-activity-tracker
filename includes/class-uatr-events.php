@@ -612,11 +612,14 @@ class UATR_Events {
 				$data['name']
 			),
 			array(
-				'meta' => array(
+				// Elevated in 2.3.0 — plugin activations are a leading cause of site breakage.
+				'severity' => 'notice',
+				'meta'     => array(
 					'plugin'       => (string) $plugin,
 					'name'         => $data['name'],
 					'version'      => $data['version'],
 					'network_wide' => (bool) $network_wide,
+					'site_state'   => $this->capture_site_state(),
 				),
 			)
 		);
@@ -727,10 +730,13 @@ class UATR_Events {
 						$data['version']
 					),
 					array(
-						'meta' => array(
-							'plugin'  => (string) $plugin,
-							'name'    => $data['name'],
-							'version' => $data['version'],
+						// Elevated in 2.3.0 — fresh installs are a leading cause of site breakage.
+						'severity' => 'notice',
+						'meta'     => array(
+							'plugin'     => (string) $plugin,
+							'name'       => $data['name'],
+							'version'    => $data['version'],
+							'site_state' => $this->capture_site_state(),
 						),
 					)
 				);
@@ -746,10 +752,13 @@ class UATR_Events {
 						$data['version']
 					),
 					array(
-						'meta' => array(
-							'plugin'  => (string) $plugin,
-							'name'    => $data['name'],
-							'version' => $data['version'],
+						// Elevated in 2.3.0 — plugin updates are the #1 cause of site breakage.
+						'severity' => 'notice',
+						'meta'     => array(
+							'plugin'     => (string) $plugin,
+							'name'       => $data['name'],
+							'version'    => $data['version'],
+							'site_state' => $this->capture_site_state(),
 						),
 					)
 				);
@@ -824,10 +833,12 @@ class UATR_Events {
 				$new_name
 			),
 			array(
-				'severity' => 'notice',
+				// Elevated in 2.3.0 — theme switches are a high-risk breakage trigger.
+				'severity' => 'warning',
 				'meta'     => array(
-					'old_theme' => $old_name,
-					'new_theme' => (string) $new_name,
+					'old_theme'  => $old_name,
+					'new_theme'  => (string) $new_name,
+					'site_state' => $this->capture_site_state(),
 				),
 			)
 		);
@@ -848,7 +859,14 @@ class UATR_Events {
 				__( 'WordPress core updated to %s', 'unstoppable-activity-tracker' ),
 				$wp_version
 			),
-			array( 'meta' => array( 'wp_version' => (string) $wp_version ) )
+			array(
+				// Elevated in 2.3.0 — core updates are a known cause of plugin/theme incompatibility crashes.
+				'severity' => 'warning',
+				'meta'     => array(
+					'wp_version' => (string) $wp_version,
+					'site_state' => $this->capture_site_state(),
+				),
+			)
 		);
 	}
 
@@ -869,6 +887,31 @@ class UATR_Events {
 			return;
 		}
 
+		// Severity ladder (added in 2.3.0): some option changes near-universally lock the
+		// site admin out or break front-end rendering. Elevate those so they're visually
+		// obvious in the Activity Log after an outage.
+		$critical_options = array( 'siteurl', 'home' );
+		$warning_options  = array( 'permalink_structure', 'WPLANG', 'users_can_register', 'default_role' );
+
+		if ( in_array( $option, $critical_options, true ) ) {
+			$severity = 'critical';
+		} elseif ( in_array( $option, $warning_options, true ) ) {
+			$severity = 'warning';
+		} else {
+			$severity = 'notice';
+		}
+
+		$meta = array(
+			'option' => (string) $option,
+			'old'    => is_scalar( $old_value ) ? (string) $old_value : wp_json_encode( $old_value ),
+			'new'    => is_scalar( $new_value ) ? (string) $new_value : wp_json_encode( $new_value ),
+		);
+
+		// Snapshot site state on the high-risk option changes so post-mortem has context.
+		if ( 'notice' !== $severity ) {
+			$meta['site_state'] = $this->capture_site_state();
+		}
+
 		$this->logger->log(
 			UATR_Logger::EVENT_OPTION_CHANGED,
 			'option',
@@ -879,12 +922,8 @@ class UATR_Events {
 				$option
 			),
 			array(
-				'severity' => 'notice',
-				'meta'     => array(
-					'option' => (string) $option,
-					'old'    => is_scalar( $old_value ) ? (string) $old_value : wp_json_encode( $old_value ),
-					'new'    => is_scalar( $new_value ) ? (string) $new_value : wp_json_encode( $new_value ),
-				),
+				'severity' => $severity,
+				'meta'     => $meta,
 			)
 		);
 	}
@@ -911,6 +950,42 @@ class UATR_Events {
 		return array(
 			'name'    => (string) $plugin_file,
 			'version' => '',
+		);
+	}
+
+	/**
+	 * Snapshot the current site state for post-mortem use (added in 2.3.0).
+	 *
+	 * Called when a potentially site-breaking event is logged (plugin/core/theme change,
+	 * critical option change). The snapshot is stored in the event's `meta` JSON so
+	 * that after an outage, the Activity Log shows the exact plugin/theme/version state
+	 * at the moment of each risky change — enough context to know what to roll back.
+	 *
+	 * Capture is intentionally minimal: identifiers and versions only, no settings data.
+	 *
+	 * @return array{active_plugins:string[], wp_version:string, active_theme:string, theme_version:string, php_version:string}
+	 */
+	private function capture_site_state() {
+		// Active plugins list — basename/slug paths like "akismet/akismet.php".
+		$active_plugins = (array) get_option( 'active_plugins', array() );
+
+		// Active theme. wp_get_theme() can fail during early bootstrap; guard defensively.
+		$theme_name    = '';
+		$theme_version = '';
+		if ( function_exists( 'wp_get_theme' ) ) {
+			$theme = wp_get_theme();
+			if ( $theme && $theme->exists() ) {
+				$theme_name    = (string) $theme->get( 'Name' );
+				$theme_version = (string) $theme->get( 'Version' );
+			}
+		}
+
+		return array(
+			'active_plugins' => array_values( array_map( 'strval', $active_plugins ) ),
+			'wp_version'     => (string) get_bloginfo( 'version' ),
+			'active_theme'   => $theme_name,
+			'theme_version'  => $theme_version,
+			'php_version'    => PHP_VERSION,
 		);
 	}
 }
