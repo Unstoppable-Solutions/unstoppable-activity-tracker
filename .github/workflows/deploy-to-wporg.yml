@@ -16,11 +16,38 @@ permissions:
 jobs:
   deploy:
     name: Push to WordPress.org SVN
-    runs-on: ubuntu-latest
+    # Pinned to ubuntu-24.04 (noble) because `ubuntu-latest` now resolves to
+    # 25.10 (resolute), which has intermittent DNS failures resolving
+    # archive.ubuntu.com during apt-get install subversion — breaking the
+    # 10up deploy action before it can reach WP.org SVN. Noble has stable
+    # mirror resolution.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Pre-install subversion with retries
+        # Install svn BEFORE the 10up action so (1) we control the retry loop
+        # for transient apt-get failures, and (2) the action's own `apt-get
+        # install subversion` becomes a no-op (it checks `command -v svn` first).
+        run: |
+          set +e
+          for attempt in 1 2 3 4 5; do
+            if sudo apt-get update && sudo apt-get install -y --no-install-recommends subversion; then
+              echo "✓ subversion installed on attempt $attempt"
+              svn --version | head -1
+              exit 0
+            fi
+            echo "✗ Attempt $attempt failed."
+            if [ "$attempt" = "2" ]; then
+              echo "Trying public DNS resolvers..."
+              sudo bash -c 'printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/resolv.conf'
+            fi
+            sleep 20
+          done
+          echo "All apt-get attempts failed." >&2
+          exit 1
 
       - name: WordPress Plugin Deploy
         id: deploy
