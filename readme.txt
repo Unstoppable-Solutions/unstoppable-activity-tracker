@@ -4,7 +4,7 @@ Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -50,7 +50,7 @@ All endpoints live under `/wp-json/unstoppable/v1/` and require an API key in th
 
 **Retention**
 
-A daily cron job deletes events older than the retention window (default 90 days). Set the retention to 0 to keep events forever.
+A daily cron job deletes events older than the retention window (default 90 days). Set the retention to 0 to keep events forever. Deletes run in bounded chunks (up to 50,000 rows per invocation) and are coordinated with an atomic lock, so a large one-time backlog can't stall a single cron run or cause overlapping workers to race.
 
 == Installation ==
 
@@ -103,6 +103,11 @@ Yes. Set the retention setting to 0.
 3. The Activity Log viewer with filters and CSV/JSON export buttons.
 
 == Changelog ==
+
+= 2.3.1 =
+* **Bounded retention cleanup.** The daily retention cron now deletes in chunks (1,000 rows per DELETE, up to 50,000 rows per invocation) and reschedules a follow-up run 5 minutes later when a large backlog remains. Replaces a single unbounded `DELETE` that could time out on sites switching from long-retention to short-retention windows.
+* **Concurrency-safe retention.** Concurrent cron invocations now coordinate through a truly atomic lock: a direct `INSERT IGNORE` against `wp_options` (atomic at the MySQL layer via the UNIQUE index on `option_name`). A losing worker skips the run cleanly rather than racing. The lock stores an owner UUID so a late-completing worker can't clobber a newer worker's claim. Stale locks older than 10 minutes are auto-recovered.
+* Significant design input from PeepSo across three rounds of review on the Reddit launch thread: the backlog-drain failure mode, the cap-and-reschedule bounded-per-run approach, and the atomic-claim locking primitive with owner-checked release. Thank you.
 
 = 2.3.0 =
 * **New: Downtime Forensics.** When a site goes offline and comes back up, the Activity Log now makes it dramatically easier to find what caused it:
@@ -160,6 +165,9 @@ Yes. Set the retention setting to 0.
 * Full uninstall cleanup (drops table, deletes options).
 
 == Upgrade Notice ==
+
+= 2.3.1 =
+Retention cleanup is now bounded (chunked DELETEs, capped per cron run, atomic lock across concurrent workers). Prevents long cleanup stalls on sites with large event backlogs. No settings changes; all existing data preserved.
 
 = 2.3.0 =
 Adds Downtime Forensics: elevated severities on risky events, site-state snapshots on changes, a one-click stability filter, and a new `?before=` REST parameter. Settings page tidied to hide API/endpoint details behind a collapsible block. All existing data preserved.

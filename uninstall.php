@@ -38,6 +38,7 @@ $uatr_options = array(
 	'uatr_digest_frequency',
 	'uatr_digest_threshold',
 	'uatr_digest_last_sent',
+	'uatr_cleanup_lock',
 );
 foreach ( $uatr_options as $uatr_opt ) {
 	delete_option( $uatr_opt );

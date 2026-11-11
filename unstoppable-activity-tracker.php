@@ -3,7 +3,7 @@
  * Plugin Name:       Unstoppable Activity Tracker
  * Plugin URI:        https://unstoppablesolutions.app/plugins/unstoppable-activity-tracker
  * Description:       Standalone activity tracker for WordPress. Visual Insights dashboard, filterable Activity Log, CSV/JSON export, optional email digests, optional WooCommerce event tracking, and a secure REST API for external sync.
- * Version:           2.3.0
+ * Version:           2.3.1
  * Author:            Unstoppable Solutions
  * Author URI:        https://unstoppablesolutions.app
  * License:           GPL-2.0-or-later
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'UATR_VERSION', '2.3.0' );
+define( 'UATR_VERSION', '2.3.1' );
 define( 'UATR_DB_VERSION', '1.0.0' );
 define( 'UATR_PLUGIN_FILE', __FILE__ );
 define( 'UATR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
