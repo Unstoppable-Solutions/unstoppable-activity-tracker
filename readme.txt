@@ -4,7 +4,7 @@ Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -104,6 +104,9 @@ Yes. Set the retention setting to 0.
 
 == Changelog ==
 
+= 2.3.2 =
+* Republish of 2.3.1 — same code. The 2.3.1 release was blocked from reaching WordPress.org because an earlier tag collision had already locked `tags/2.3.1/` to the previous version's code. Shipping under 2.3.2 so the bounded retention cleanup actually reaches users. See the 2.3.1 entry below for the full feature list.
+
 = 2.3.1 =
 * **Bounded retention cleanup.** The daily retention cron now deletes in chunks (1,000 rows per DELETE, up to 50,000 rows per invocation) and reschedules a follow-up run 5 minutes later when a large backlog remains. Replaces a single unbounded `DELETE` that could time out on sites switching from long-retention to short-retention windows.
 * **Concurrency-safe retention.** Concurrent cron invocations now coordinate through a truly atomic lock: a direct `INSERT IGNORE` against `wp_options` (atomic at the MySQL layer via the UNIQUE index on `option_name`). A losing worker skips the run cleanly rather than racing. The lock stores an owner UUID so a late-completing worker can't clobber a newer worker's claim. Stale locks older than 10 minutes are auto-recovered.
@@ -165,6 +168,9 @@ Yes. Set the retention setting to 0.
 * Full uninstall cleanup (drops table, deletes options).
 
 == Upgrade Notice ==
+
+= 2.3.2 =
+Republish of 2.3.1 — same bounded retention cleanup + atomic concurrency lock. No settings changes; all existing data preserved.
 
 = 2.3.1 =
 Retention cleanup is now bounded (chunked DELETEs, capped per cron run, atomic lock across concurrent workers). Prevents long cleanup stalls on sites with large event backlogs. No settings changes; all existing data preserved.
