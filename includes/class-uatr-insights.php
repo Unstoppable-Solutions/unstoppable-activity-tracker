@@ -266,27 +266,8 @@ class UATR_Insights {
 		global $wpdb;
 		$table = UATR_Installer::get_table_name();
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Aggregate on custom table; identifier is safe, value bound via prepare().
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS failed_logins,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS new_users,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS deleted_users,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS role_changes,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_activations,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_deactivations,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_installs,
-			SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS core_updates
-			FROM {$table} WHERE created_on > %f",
-			UATR_Logger::EVENT_USER_LOGIN_FAILED,
-			UATR_Logger::EVENT_USER_REGISTERED,
-			UATR_Logger::EVENT_USER_DELETED,
-			UATR_Logger::EVENT_USER_ROLE_CHANGED,
-			UATR_Logger::EVENT_PLUGIN_ACTIVATED,
-			UATR_Logger::EVENT_PLUGIN_DEACTIVATED,
-			UATR_Logger::EVENT_PLUGIN_INSTALLED,
-			UATR_Logger::EVENT_CORE_UPDATED,
-			$range_start
-		), ARRAY_A );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Aggregate on custom table; identifier is safe, values bound via prepare(). Single-line query so the ignore comment covers the interpolation line (Plugin Check attaches warnings to the exact interpolation line).
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS failed_logins, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS new_users, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS deleted_users, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS role_changes, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_activations, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_deactivations, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS plugin_installs, SUM(CASE WHEN alert_id = %d THEN 1 ELSE 0 END) AS core_updates FROM {$table} WHERE created_on > %f", UATR_Logger::EVENT_USER_LOGIN_FAILED, UATR_Logger::EVENT_USER_REGISTERED, UATR_Logger::EVENT_USER_DELETED, UATR_Logger::EVENT_USER_ROLE_CHANGED, UATR_Logger::EVENT_PLUGIN_ACTIVATED, UATR_Logger::EVENT_PLUGIN_DEACTIVATED, UATR_Logger::EVENT_PLUGIN_INSTALLED, UATR_Logger::EVENT_CORE_UPDATED, $range_start ), ARRAY_A );
 
 		if ( ! $row ) {
 			$row = array();
