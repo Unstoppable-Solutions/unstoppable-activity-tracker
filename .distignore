@@ -36,3 +36,4 @@ phpstan.neon.dist
 wp-cli.local.yml
 LICENSE
 LICENSE.txt
+.wordpress-org
