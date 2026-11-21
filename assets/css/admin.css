@@ -241,3 +241,173 @@
 	font-size: 12px;
 	font-style: italic;
 }
+
+/* --- 2.3.3 Debug Log viewer --- */
+
+/* Status card */
+.uatr-debug-status {
+	margin: 18px 0;
+	padding: 14px 18px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #f0b849;
+	border-radius: 4px;
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	row-gap: 6px;
+	column-gap: 16px;
+	max-width: 900px;
+	font-size: 13px;
+}
+
+.uatr-debug-status-row {
+	display: contents;
+}
+
+.uatr-debug-status-label {
+	color: #50575e;
+	font-weight: 600;
+}
+
+.uatr-debug-path {
+	font-size: 12px;
+	background: #f6f7f7;
+	padding: 2px 6px;
+	border-radius: 3px;
+	word-break: break-all;
+}
+
+/* ON/OFF pills */
+.uatr-debug-pill {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	color: #fff;
+}
+
+.uatr-debug-pill.uatr-pill-on  { background: #008a20; }
+.uatr-debug-pill.uatr-pill-off { background: #8c8f94; }
+
+/* Toolbar */
+.uatr-debug-toolbar {
+	margin: 18px 0 10px;
+	padding: 12px 14px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 12px;
+}
+
+.uatr-debug-toolbar label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #50575e;
+}
+
+.uatr-debug-toolbar input[type="number"] {
+	width: 90px;
+}
+
+.uatr-debug-toolbar input[type="search"] {
+	min-width: 220px;
+}
+
+.uatr-debug-toolbar-right {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.uatr-debug-inline-form {
+	display: inline-block;
+	margin: 0;
+}
+
+.uatr-debug-count {
+	color: #50575e;
+	font-size: 12px;
+	margin: 6px 0 10px;
+}
+
+/* Entries table */
+.uatr-debug-table {
+	margin-top: 8px;
+}
+
+.uatr-debug-table td,
+.uatr-debug-table th {
+	vertical-align: top;
+	padding: 8px 10px;
+	font-size: 13px;
+}
+
+.uatr-debug-time {
+	white-space: nowrap;
+	color: #50575e;
+	font-variant-numeric: tabular-nums;
+}
+
+.uatr-debug-msg {
+	font-size: 12px;
+	background: transparent;
+	padding: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.uatr-debug-stack {
+	margin: 6px 0 0;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	max-height: 320px;
+	overflow: auto;
+	font-size: 11px;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* Empty / help blocks */
+.uatr-debug-empty {
+	padding: 24px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	color: #50575e;
+}
+
+.uatr-debug-help {
+	margin: 18px 0;
+	padding: 18px 20px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #f0b849;
+	border-radius: 4px;
+	max-width: 900px;
+}
+
+.uatr-debug-help h2 {
+	margin-top: 0;
+	font-size: 16px;
+}
+
+.uatr-debug-snippet {
+	margin: 10px 0;
+	padding: 12px 14px;
+	background: #1d2327;
+	color: #f6f7f7;
+	border-radius: 4px;
+	font-size: 12px;
+	overflow-x: auto;
+}

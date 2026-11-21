@@ -4,16 +4,18 @@ Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Standalone activity log with Insights charts, downtime forensics, CSV/JSON export, email digests, optional WooCommerce tracking, and REST API.
+Standalone activity log with Insights, downtime forensics, PHP debug log viewer, CSV/JSON export, email digests, optional WooCommerce, and REST API.
 
 == Description ==
 
 Unstoppable Activity Tracker is a fully standalone activity tracker. It does **not** depend on any other plugin — it hooks WordPress directly and writes to its own database table.
+
+**New in 2.3.3 — Debug Log viewer:** the WordPress PHP debug log, right inside the admin, next to the Activity Log. The Activity Log records what users did; the Debug Log records what the code did. Pair them to correlate a plugin update against a fatal at the same timestamp and the cause is usually obvious. Includes severity filtering (fatal / warning / notice / deprecated / database), text search, log download, and a safe log-clear button. Tail-reads huge log files efficiently.
 
 **New in 2.3.0 — Downtime Forensics:** when a site goes offline and comes back up, Activity Tracker makes it dramatically easier to find what caused it. Risky events (plugin updates, core updates, theme switches, critical option changes) are now visually highlighted in the log, each annotated with a snapshot of the plugin/theme/version state at that moment. A one-click "Site-stability events" filter and a new `?before=` REST parameter let you drill into the minutes before a known outage.
 
@@ -101,8 +103,19 @@ Yes. Set the retention setting to 0.
 1. Insights page — activity trends, category breakdown, top users, and security highlights, with a time range switcher.
 2. The settings page with the connection details, retention controls, and email digest settings.
 3. The Activity Log viewer with filters and CSV/JSON export buttons.
+4. The Debug Log viewer — tails WordPress's PHP debug log in the admin, with severity pills, text search, download, and safe clear.
 
 == Changelog ==
+
+= 2.3.3 =
+* **New: Debug Log viewer.** A new Debug Log page under Activity Tracker tails the WordPress PHP debug log in the admin. The Activity Log records what users did on the site; the Debug Log records what the code did (fatals, warnings, notices, deprecations, database errors). Side by side they give the complete "what happened" picture for any incident.
+  * **Safe on huge logs.** The viewer seeks backward through the file in 8KB chunks to pull just the tail — never loads a multi-hundred-MB debug.log into memory.
+  * **Severity filtering.** Fatal / uncaught, parse errors, errors, warnings, database errors, notices, deprecated — each pill-coded to match the Activity Log's severity convention.
+  * **Text search** across the visible tail window.
+  * **Download the full log** as a timestamped .log file for off-site analysis.
+  * **Clear log** truncates the file to zero bytes (safer than deleting it — WordPress keeps writing to the same file descriptor without needing PHP-FPM to re-open).
+  * **Multi-line entries** (stack traces following a fatal) collapse into an expandable details block so the table stays scannable.
+  * **Configuration help.** When WP_DEBUG_LOG is off, the page shows the exact wp-config.php snippet you need to paste in — the plugin never edits wp-config.php itself (editing it incorrectly can take a site offline).
 
 = 2.3.2 =
 * Republish of 2.3.1 — same code. The 2.3.1 release was blocked from reaching WordPress.org because an earlier tag collision had already locked `tags/2.3.1/` to the previous version's code. Shipping under 2.3.2 so the bounded retention cleanup actually reaches users. See the 2.3.1 entry below for the full feature list.
@@ -168,6 +181,9 @@ Yes. Set the retention setting to 0.
 * Full uninstall cleanup (drops table, deletes options).
 
 == Upgrade Notice ==
+
+= 2.3.3 =
+Adds a Debug Log viewer — tails WordPress's PHP debug log in the admin with severity filtering, text search, download, and safe clear. Pair with the Activity Log to correlate code errors against user actions. No settings changes; all existing data preserved.
 
 = 2.3.2 =
 Republish of 2.3.1 — same bounded retention cleanup + atomic concurrency lock. No settings changes; all existing data preserved.
