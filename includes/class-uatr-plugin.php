@@ -120,6 +120,13 @@ class UATR_Plugin {
 	public $digest;
 
 	/**
+	 * Debug Log viewer.
+	 *
+	 * @var UATR_Debug_Log
+	 */
+	public $debug_log;
+
+	/**
 	 * Get singleton.
 	 *
 	 * @return UATR_Plugin
@@ -159,10 +166,11 @@ class UATR_Plugin {
 
 		// Admin-only.
 		if ( is_admin() ) {
-			$this->notices  = new UATR_Admin_Notices();
-			$this->insights = new UATR_Insights();
-			$this->exporter = new UATR_Exporter();
-			$this->admin    = new UATR_Admin( $this->notices );
+			$this->notices   = new UATR_Admin_Notices();
+			$this->insights  = new UATR_Insights();
+			$this->exporter  = new UATR_Exporter();
+			$this->debug_log = new UATR_Debug_Log();
+			$this->admin     = new UATR_Admin( $this->notices );
 		}
 	}
 

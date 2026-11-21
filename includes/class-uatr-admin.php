@@ -89,6 +89,16 @@ class UATR_Admin {
 			array( $this, 'render_log_page' )
 		);
 
+		$debug_log = UATR_Plugin::get_instance()->debug_log;
+		add_submenu_page(
+			UATR_PLUGIN_SLUG,
+			__( 'Debug Log', 'unstoppable-activity-tracker' ),
+			__( 'Debug Log', 'unstoppable-activity-tracker' ),
+			'manage_options',
+			UATR_Debug_Log::PAGE_SLUG,
+			array( $debug_log, 'render_page' )
+		);
+
 		add_submenu_page(
 			UATR_PLUGIN_SLUG,
 			__( 'Settings', 'unstoppable-activity-tracker' ),
