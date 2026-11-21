@@ -112,6 +112,7 @@ class UATR_Debug_Log {
 		if ( null !== $path && file_exists( $path ) ) {
 			$state['exists']   = true;
 			$state['readable'] = is_readable( $path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Checking writability on the ABSOLUTE WP_DEBUG_LOG path to decide whether the "Clear log" button should be shown. WP_Filesystem would require admin FS credentials on non-direct hosts just to answer this read-only capability check, which is inappropriate for a status display.
 			$state['writable'] = is_writable( $path );
 			$state['size']     = (int) filesize( $path );
 			$state['modified'] = (int) filemtime( $path );
@@ -137,6 +138,13 @@ class UATR_Debug_Log {
 			return '';
 		}
 
+		// Direct PHP file operations are required for efficient tail-reading
+		// of a system log at an ABSOLUTE path (the resolved WP_DEBUG_LOG path,
+		// typically wp-content/debug.log). WP_Filesystem has no byte-level
+		// seek API, so a tail-read of a multi-hundred-MB debug.log via
+		// WP_Filesystem would require reading the entire file — defeating the
+		// whole purpose of this method. See CLAUDE.md for the OOM-safety story.
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fread,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		$fp = @fopen( $path, 'rb' );
 		if ( ! $fp ) {
 			return '';
@@ -163,6 +171,7 @@ class UATR_Debug_Log {
 		}
 
 		fclose( $fp );
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fread,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
 		// Trim to exactly $lines lines from the end. A trailing newline on
 		// the final line creates an empty tail element after explode() — drop
@@ -302,6 +311,12 @@ class UATR_Debug_Log {
 	 */
 	private function clear_log() {
 		$path = self::resolve_log_path();
+		// Direct filesystem ops on the ABSOLUTE WP_DEBUG_LOG path. WP_Filesystem
+		// is wrong here: we specifically want to truncate the file to zero bytes
+		// (not unlink it), preserving the open file descriptor WordPress and
+		// PHP-FPM may already hold — so WordPress keeps writing to the same FD
+		// without needing a restart. WP_Filesystem has no truncate primitive.
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_is_writable,WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		if ( null === $path || ! file_exists( $path ) || ! is_writable( $path ) ) {
 			return;
 		}
@@ -309,6 +324,7 @@ class UATR_Debug_Log {
 		if ( $fp ) {
 			fclose( $fp );
 		}
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_is_writable,WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 	}
 
 	/**
@@ -326,6 +342,11 @@ class UATR_Debug_Log {
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 		header( 'Content-Length: ' . (string) filesize( $path ) );
 
+		// Streaming the log file to the browser as an attachment download.
+		// WP_Filesystem has no streaming API (get_contents() would load the
+		// entire multi-hundred-MB file into memory and often OOM) — direct
+		// fopen+fread lets us chunk-stream and keep memory flat.
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fread,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		$fp = @fopen( $path, 'rb' );
 		if ( $fp ) {
 			while ( ! feof( $fp ) ) {
@@ -333,6 +354,7 @@ class UATR_Debug_Log {
 			}
 			fclose( $fp );
 		}
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fread,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 	}
 
 	/* ================================================================
