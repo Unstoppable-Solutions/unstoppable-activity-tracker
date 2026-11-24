@@ -4,7 +4,7 @@ Donate link: https://unstoppablesolutions.app/donate
 Tags: activity log, audit log, security, monitoring, rest api
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.3.3
+Stable tag: 2.3.4
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,10 @@ Yes. Set the retention setting to 0.
 
 == Changelog ==
 
+= 2.3.4 =
+* **Fixed: debug log download on very large logs.** Downloading a multi-hundred-MB debug log previously failed with HTTP 413 (Cloudflare, mod_security, and reverse proxies all cap response-body size). The download now streams at most the last 25 MB by default — the tail is what you want when triaging recent errors anyway, and anyone who needs the complete file can grab it via SFTP. The download button label now shows the actual bytes you will receive (e.g. "Download last 25 MB of 450 MB"), and the filename includes a `-tail-` marker so truncated downloads are obvious. Overridable per-site via the `uatr_debug_log_download_max_bytes` filter.
+* **Fixed: output buffering on download.** The download now drops every active PHP output buffer before streaming the file, preventing WordPress admin output buffers from silently accumulating the entire response in memory on large logs.
+
 = 2.3.3 =
 * **New: Debug Log viewer.** A new Debug Log page under Activity Tracker tails the WordPress PHP debug log in the admin. The Activity Log records what users did on the site; the Debug Log records what the code did (fatals, warnings, notices, deprecations, database errors). Side by side they give the complete "what happened" picture for any incident.
   * **Safe on huge logs.** The viewer seeks backward through the file in 8KB chunks to pull just the tail — never loads a multi-hundred-MB debug.log into memory.
@@ -181,6 +185,9 @@ Yes. Set the retention setting to 0.
 * Full uninstall cleanup (drops table, deletes options).
 
 == Upgrade Notice ==
+
+= 2.3.4 =
+Fixes HTTP 413 errors when downloading large debug logs. The download now caps at 25 MB by default and streams the tail of the file. No settings changes; safe drop-in upgrade.
 
 = 2.3.3 =
 Adds a Debug Log viewer — tails WordPress's PHP debug log in the admin with severity filtering, text search, download, and safe clear. Pair with the Activity Log to correlate code errors against user actions. No settings changes; all existing data preserved.

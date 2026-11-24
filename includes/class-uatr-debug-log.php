@@ -42,6 +42,27 @@ class UATR_Debug_Log {
 	const TAIL_CHUNK_SIZE = 8192;
 
 	/**
+	 * Maximum bytes streamed in a single download. Debug logs on long-running
+	 * sites can reach hundreds of MB, and the response is usually rejected
+	 * upstream (Cloudflare caps response bodies around 100 MB on free/pro
+	 * plans, mod_security inspects the first ~512 KB, reverse proxies often
+	 * have their own caps). When the log is larger than this, we stream only
+	 * the tail — users downloading a debug log almost always want recent
+	 * errors, not full history, and anyone who needs the complete file can
+	 * grab it via SFTP.
+	 *
+	 * Overridable via the `uatr_debug_log_download_max_bytes` filter.
+	 */
+	const DOWNLOAD_MAX_BYTES = 26214400; // 25 MB.
+
+	/**
+	 * Chunk size for the download streaming loop. Larger than TAIL_CHUNK_SIZE
+	 * because the download walks forward through the file and we want to
+	 * minimise syscall / flush overhead, not seek precision.
+	 */
+	const DOWNLOAD_CHUNK_SIZE = 65536; // 64 KB.
+
+	/**
 	 * Severity map used when rendering parsed entries.
 	 *
 	 * @var array<string,string>
@@ -329,28 +350,80 @@ class UATR_Debug_Log {
 
 	/**
 	 * Stream the debug log to the browser as a download.
+	 *
+	 * Caps the response at DOWNLOAD_MAX_BYTES (default 25 MB). Logs larger
+	 * than the cap stream only the TAIL — the last cap-bytes of the file.
+	 * The exported filename reflects which mode was used.
+	 *
+	 * Why the cap: a raw stream of a 500 MB debug.log through WordPress is
+	 * routinely rejected upstream with HTTP 413 (Cloudflare 100 MB response
+	 * cap on free/pro, mod_security SecResponseBodyLimit, reverse-proxy
+	 * limits) and would in any case take minutes to transfer. Users opening
+	 * a debug log want recent errors; anyone who needs the complete file
+	 * should grab it via SFTP.
+	 *
+	 * Buffer handling: WordPress admin requests often have one or more
+	 * output buffers active (for ob_gzhandler, admin notices, etc.). Without
+	 * flushing those, `echo` inside this loop accumulates the entire file
+	 * in PHP memory before the response leaves the server — a classic OOM
+	 * on big logs. We drop every active buffer before the first byte.
 	 */
 	private function download_log() {
 		$path = self::resolve_log_path();
 		if ( null === $path || ! file_exists( $path ) || ! is_readable( $path ) ) {
 			wp_die( esc_html__( 'Debug log is not readable.', 'unstoppable-activity-tracker' ) );
 		}
-		$filename = 'debug-' . gmdate( 'Y-m-d-His' ) . '.log';
+
+		$full_size  = (int) filesize( $path );
+
+		/**
+		 * Filter the per-download byte cap. Return 0 to stream the full file
+		 * regardless of size (not recommended behind Cloudflare or a WAF).
+		 *
+		 * @param int    $max_bytes Default DOWNLOAD_MAX_BYTES.
+		 * @param int    $full_size Actual size of the debug log file in bytes.
+		 * @param string $path      Absolute path of the debug log.
+		 */
+		$max_bytes  = (int) apply_filters( 'uatr_debug_log_download_max_bytes', self::DOWNLOAD_MAX_BYTES, $full_size, $path );
+		$tail_only  = $max_bytes > 0 && $full_size > $max_bytes;
+		$send_bytes = $tail_only ? $max_bytes : $full_size;
+		$filename   = $tail_only
+			? 'debug-tail-' . size_format( $max_bytes, 0 ) . '-' . gmdate( 'Y-m-d-His' ) . '.log'
+			: 'debug-' . gmdate( 'Y-m-d-His' ) . '.log';
+		$filename   = str_replace( ' ', '', $filename );
+
+		// Drop every active output buffer so we stream directly to the socket.
+		// Must happen BEFORE any header() call or echo.
+		while ( ob_get_level() > 0 ) {
+			ob_end_clean();
+		}
 
 		nocache_headers();
 		header( 'Content-Type: text/plain; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
-		header( 'Content-Length: ' . (string) filesize( $path ) );
+		header( 'Content-Length: ' . (string) $send_bytes );
+		if ( $tail_only ) {
+			// Hint to the client that this is a partial representation of the
+			// resource. Not required (we set Content-Length to the clip size),
+			// but helpful for anyone inspecting headers.
+			header( 'X-UATR-Debug-Log-Truncated: tail; original-bytes=' . (string) $full_size );
+		}
 
 		// Streaming the log file to the browser as an attachment download.
 		// WP_Filesystem has no streaming API (get_contents() would load the
-		// entire multi-hundred-MB file into memory and often OOM) — direct
-		// fopen+fread lets us chunk-stream and keep memory flat.
+		// entire file into memory and OOM on large logs) — direct fopen+fread
+		// lets us chunk-stream and keep memory flat.
 		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.WP.AlternativeFunctions.file_system_operations_fread,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		$fp = @fopen( $path, 'rb' );
 		if ( $fp ) {
+			if ( $tail_only ) {
+				// Seek to (filesize - max_bytes); subsequent reads stream the
+				// last max_bytes bytes of the file.
+				fseek( $fp, $full_size - $max_bytes, SEEK_SET );
+			}
 			while ( ! feof( $fp ) ) {
-				echo fread( $fp, 8192 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Raw file stream for download.
+				echo fread( $fp, self::DOWNLOAD_CHUNK_SIZE ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Raw file stream for download.
+				@flush(); // Push each chunk out immediately; keeps memory flat and lets the client see progress.
 			}
 			fclose( $fp );
 		}
@@ -418,7 +491,7 @@ class UATR_Debug_Log {
 			<?php $this->render_status_card( $state ); ?>
 
 			<?php if ( $state['exists'] && $state['readable'] ) : ?>
-				<?php $this->render_toolbar( $lines, $sev_filter, $search ); ?>
+				<?php $this->render_toolbar( $lines, $sev_filter, $search, $state ); ?>
 				<?php $this->render_entries( $entries, $lines ); ?>
 			<?php elseif ( ! $state['wp_debug_log'] ) : ?>
 				<?php $this->render_enable_help(); ?>
@@ -502,7 +575,7 @@ class UATR_Debug_Log {
 	 * @param string $sev_filter Current severity filter.
 	 * @param string $search     Current search string.
 	 */
-	private function render_toolbar( $lines, $sev_filter, $search ) {
+	private function render_toolbar( $lines, $sev_filter, $search, $state = array() ) {
 		$severities = array(
 			''           => __( 'All severities', 'unstoppable-activity-tracker' ),
 			'fatal'      => __( 'Fatal / Uncaught', 'unstoppable-activity-tracker' ),
@@ -523,6 +596,25 @@ class UATR_Debug_Log {
 			),
 			'uatr_debug_download'
 		);
+
+		// Decide the download button's label based on whether the log exceeds
+		// the per-download cap. Mirrors the logic in download_log() so the
+		// button tells the truth about what the user will receive.
+		$file_size   = isset( $state['size'] ) ? (int) $state['size'] : 0;
+		$max_bytes   = (int) apply_filters( 'uatr_debug_log_download_max_bytes', self::DOWNLOAD_MAX_BYTES, $file_size, isset( $state['path'] ) ? $state['path'] : '' );
+		$will_tail   = $max_bytes > 0 && $file_size > $max_bytes;
+		if ( $will_tail ) {
+			$download_label = sprintf(
+				/* translators: 1: tail size (e.g. "25 MB"), 2: full file size (e.g. "450 MB") */
+				__( 'Download last %1$s of %2$s', 'unstoppable-activity-tracker' ),
+				size_format( $max_bytes, 0 ),
+				size_format( $file_size, 1 )
+			);
+			$download_title = __( 'The log is larger than this plugin will stream in one request (hosts and CDNs reject very large responses with HTTP 413). Download the tail here, or grab the complete file via SFTP.', 'unstoppable-activity-tracker' );
+		} else {
+			$download_label = __( 'Download full log', 'unstoppable-activity-tracker' );
+			$download_title = '';
+		}
 		?>
 		<form method="get" class="uatr-debug-toolbar">
 			<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>" />
@@ -546,7 +638,7 @@ class UATR_Debug_Log {
 			<a class="button" href="<?php echo esc_url( menu_page_url( self::PAGE_SLUG, false ) ); ?>"><?php esc_html_e( 'Reset', 'unstoppable-activity-tracker' ); ?></a>
 
 			<span class="uatr-debug-toolbar-right">
-				<a class="button" href="<?php echo esc_url( $download_url ); ?>"><?php esc_html_e( 'Download full log', 'unstoppable-activity-tracker' ); ?></a>
+				<a class="button" href="<?php echo esc_url( $download_url ); ?>"<?php if ( '' !== $download_title ) : ?> title="<?php echo esc_attr( $download_title ); ?>"<?php endif; ?>><?php echo esc_html( $download_label ); ?></a>
 				<form method="post" class="uatr-debug-inline-form" onsubmit="return confirm('<?php echo esc_js( __( 'Clear the entire debug log? This cannot be undone.', 'unstoppable-activity-tracker' ) ); ?>');">
 					<?php wp_nonce_field( 'uatr_debug_clear' ); ?>
 					<input type="hidden" name="uatr_debug_clear" value="1" />
